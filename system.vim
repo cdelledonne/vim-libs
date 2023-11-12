@@ -1,5 +1,5 @@
 " =============================================================================
-" Location:    autoload/utest/system.vim
+" File:        system.vim
 " Description: System abstraction layer
 " ==============================================================================
 
@@ -73,11 +73,11 @@ function! s:system.GetDataDir() abort
         endif
         let l:editor_data_dir = l:self.Path([l:cache_dir, 'vim'], v:false)
     endif
-    return l:self.Path([l:editor_data_dir, 'utest'], v:false)
+    return l:self.Path([l:editor_data_dir, g:libs_plugin_prefix], v:false)
 endfunction
 
 " Get system 'object'.
 "
-function! utest#system#Get() abort
+function! libs#system#Get() abort
     return s:system
 endfunction
