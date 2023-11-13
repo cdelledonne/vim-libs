@@ -1,6 +1,6 @@
-" =============================================================================
+" ==============================================================================
 " File:        system.vim
-" Description: System abstraction layer
+" Description: System abstraction layer, isolated for easier unit-testing
 " ==============================================================================
 
 let s:system = {}
@@ -8,7 +8,54 @@ let s:system = {}
 let s:stdout_partial_line = {}
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Public functions
+" Tiny wrappers for built-in functions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+function! s:system.BufferClear(buffer) abort
+    call deletebufline(a:buffer, 1, '$')
+endfunction
+
+function! s:system.BufferGetWindowID(buffer) abort
+    return bufwinid(a:buffer)
+endfunction
+
+function! s:system.BufferWriteLines(buffer, lnum, lines) abort
+    call appendbufline(a:buffer, a:lnum, a:lines)
+endfunction
+
+function! s:system.DirectoryExists(path) abort
+    return isdirectory(a:path)
+endfunction
+
+function! s:system.FileIsReadable(path) abort
+    return filereadable(a:path)
+endfunction
+
+function! s:system.GetCWD() abort
+    return getcwd()
+endfunction
+
+function! s:system.GetFunctionInfo(funcref) abort
+    " Get second line of function info as produced by ':verbose function'.
+    let l:info = split(execute('verbose function a:funcref'), "\n")[1]
+    " Extract file name and line number of where function was defined.
+    return matchlist(l:info, '\m\CLast set from \(.*\) line \(\d\+\)')[1:2]
+endfunction
+
+function! s:system.GetStackTrace() abort
+    return split(expand('<stack>'), '\m\C\.\.')
+endfunction
+
+function! s:system.Source(file) abort
+    execute 'source ' . a:file
+endfunction
+
+function! s:system.VimIsStarting() abort
+    return has('vim_starting')
+endfunction
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Main functions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " Generate escaped path string from list of components.
@@ -39,7 +86,7 @@ function! s:system.Path(components, relative) abort
         " For some reason, reducing the path to relative returns an empty string
         " if the path happens to be the same as CWD. Thus, only reduce the path
         " to relative when it is not CWD, otherwise just return '.'.
-        if l:path ==# getcwd()
+        if l:path ==# l:self.GetCWD()
             let l:path = '.'
         else
             let l:path = fnamemodify(l:path, ':.')
@@ -48,6 +95,22 @@ function! s:system.Path(components, relative) abort
     " Simplify path.
     let l:path = simplify(l:path)
     return l:path
+endfunction
+
+" Expand file wildcards.
+"
+" Params:
+"     expr : String
+"         expression to expand
+"
+" Returns:
+"     List
+"         matching files
+"
+function! s:system.Glob(expr) abort
+    let l:files = glob(a:expr, v:false, v:true)
+    call map(l:files, {_, val -> l:self.Path([val], v:false)})
+    return l:files
 endfunction
 
 " Get absolute path to plugin data directory.
@@ -74,6 +137,94 @@ function! s:system.GetDataDir() abort
         let l:editor_data_dir = l:self.Path([l:cache_dir, 'vim'], v:false)
     endif
     return l:self.Path([l:editor_data_dir, g:libs_plugin_prefix], v:false)
+endfunction
+
+" Create new buffer in a certain window.
+"
+" Params:
+"     window : Number
+"         ID of the window to create a buffer inside of
+"     echo_term : Bool
+"         whether the new buffer must be an echo terminal (job-less terminal to
+"         echo data to)
+"
+" Returns:
+"     Dictionary
+"         buffer_id : Number
+"             ID of the new buffer
+"         term_id : Number
+"             ID of the new echo terminal, if applicable
+"
+function! s:system.BufferCreate(window, echo_term) abort
+    let l:original_win_id = win_getid()
+    if l:original_win_id != a:window
+        noautocmd call win_gotoid(a:window)
+    endif
+    execute 'enew'
+    if a:echo_term
+        let l:term_id = l:self.EchoTermOpen()
+    else
+        let l:term_id = -1
+    endif
+    let l:buffer_id = bufnr()
+    if l:original_win_id != a:window
+        noautocmd call win_gotoid(l:original_win_id)
+    endif
+    return {'buffer_id': l:buffer_id, 'term_id': l:term_id}
+endfunction
+
+" Create window split.
+"
+" Params:
+"     position : String
+"         position command, e.g. 'botright' or 'topleft'
+"     size : Number
+"         size of the window (number of columns or rows)
+"     options : List
+"         list of options to set for the created window
+"
+" Returns:
+"     Number
+"         ID of the new window
+"
+function! s:system.WindowCreate(position, size, options) abort
+    let l:original_win_id = win_getid()
+    execute join([a:position, a:size . 'split'])
+    let l:new_win_id = win_getid()
+    for l:option in a:options
+        execute join(['setlocal', l:option])
+    endfor
+    if l:original_win_id != l:new_win_id
+        call win_gotoid(l:original_win_id)
+    endif
+    return l:new_win_id
+endfunction
+
+" Set the current buffer in a window.
+"
+" Params:
+"     window : Number
+"         ID of the window to set the buffer for
+"     buffer : Number
+"         ID of the buffer
+"
+" Returns:
+"     Boolean
+"         v:false if buffer of window do not exist, otherwise v:true
+"
+function! s:system.WindowSetBuffer(window, buffer) abort
+    let l:original_win_id = win_getid()
+    if !bufexists(a:buffer) || getwininfo(a:window) == []
+        return v:false
+    endif
+    if l:original_win_id != a:window
+        noautocmd call win_gotoid(a:window)
+    endif
+    execute 'b ' . a:buffer
+    if l:original_win_id != a:window
+        noautocmd call win_gotoid(l:original_win_id)
+    endif
+    return v:true
 endfunction
 
 " Get system 'object'.
