@@ -225,7 +225,7 @@ endfunction
 "
 function! s:system.BufferGetOption(buffer, option) abort
     if has('nvim')
-        call nvim_buf_set_option(a:buffer, a:option)
+        call nvim_buf_get_option(a:buffer, a:option)
     else
         return getbufvar(a:buffer, '&' . a:option)
     endif
