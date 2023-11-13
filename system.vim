@@ -203,7 +203,7 @@ endfunction
 "         term_id : Number
 "             ID of the new echo terminal, if applicable, otherwise -1
 "
-function! s:system.BufferCreate(echo_term) abort
+function! s:system.BufferCreate(echo_term, ...) abort
     let l:buffer_name = exists('a:1') ? a:1 : ''
     let l:buffer_id = bufadd(l:buffer_name)
     call bufload(l:buffer_id)
