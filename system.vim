@@ -215,6 +215,22 @@ function! s:system.BufferCreate(echo_term, ...) abort
     return {'buffer_id': l:buffer_id, 'term_id': l:term_id}
 endfunction
 
+" Get option value for a buffer.
+"
+" Params:
+"     buffer : Number
+"         buffer ID, or 0 for current buffer
+"     option : String
+"         option name
+"
+function! s:system.BufferGetOption(buffer, option) abort
+    if has('nvim')
+        call nvim_buf_set_option(a:buffer, a:option)
+    else
+        return getbufvar(a:buffer, '&' . a:option)
+    endif
+endfunction
+
 " Set option values for a buffer.
 "
 " Params:
