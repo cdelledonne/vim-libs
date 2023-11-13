@@ -8,6 +8,34 @@ let s:system = {}
 let s:stdout_partial_line = {}
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Private functions
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+function! s:BufferExecute(buffer, commands) abort
+    if !bufexists(a:buffer)
+        throw 'vim-libs-system-buffer-not-existing'
+    endif
+    if bufwinid(a:buffer) == -1
+        throw 'vim-libs-system-buffer-not-displayed'
+    endif
+    let l:buffer = a:buffer != 0 ? a:buffer : bufnr()
+    let l:target_win_id = bufwinid(l:buffer)
+    for l:command in a:commands
+        call win_execute(l:target_win_id, l:command)
+    endfor
+endfunction
+
+function! s:OptPairToString(name, value) abort
+    if a:value is v:true
+        return a:name
+    elseif a:value is v:false
+        return 'no' . a:name
+    else
+        return a:name . '=' . a:value
+    endif
+endfunction
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 " Tiny wrappers for built-in functions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -171,6 +199,83 @@ function! s:system.BufferCreate(window, echo_term) abort
         noautocmd call win_gotoid(l:original_win_id)
     endif
     return {'buffer_id': l:buffer_id, 'term_id': l:term_id}
+endfunction
+
+" Set option values for a buffer.
+"
+" Params:
+"     buffer : Number
+"         buffer ID, or 0 for current buffer
+"     options : Dictionary
+"         dictionary of {name, value} pairs
+"
+function! s:system.BufferSetOptions(buffer, options) abort
+    for [l:name, l:value] in items(a:options)
+        if has('nvim')
+            call nvim_buf_set_option(a:buffer, l:name, l:value)
+        else
+            call setbufvar(a:buffer, '&' . l:name, l:value)
+        endif
+    endfor
+endfunction
+
+" Set keymaps for a buffer. The keymap is always non-recursive (noremap) and
+" won't be echoed to the command line (silent). In Vim, this only works for a
+" buffer which is displayed in a window, otherwise throws an exception.
+"
+" Params:
+"     buffer : Number
+"         buffer ID, or 0 for current buffer
+"     mode : String
+"         mode short name, e.g. 'n', 'i', 'x', etc.
+"     keymaps : Dictionary
+"         dictionary of {lhs, rhs} pairs
+"
+" Throws:
+"     vim-libs-system-buffer-not-existing
+"         when the buffer doesn't exist
+"     vim-libs-system-buffer-not-displayed
+"         when the buffer is not displayed in a window
+"
+function! s:system.BufferSetKeymaps(buffer, mode, keymaps) abort
+    for [l:lhs, l:rhs] in items(a:keymaps)
+        if has('nvim')
+            let l:opts = {'noremap': v:true, 'silent': v:true}
+            call nvim_buf_set_keymap(a:buffer, a:mode, l:lhs, l:rhs, l:opts)
+        else
+            call s:BufferExecute(a:buffer, [
+                \ printf('nnoremap <buffer> <silent> %s %s', l:lhs, l:rhs)
+                \ ])
+        endif
+    endfor
+endfunction
+
+" Set autocommands for a buffer. In Vim, this only works for a buffer which is
+" displayed in a window, otherwise throws an exception.
+"
+" Params:
+"     buffer : Number
+"         buffer ID, or 0 for current buffer
+"     group : String
+"         autocommand group
+"     autocmds : List
+"     autocmds : Dictionary
+"         dictionary of {event, function} pairs
+"
+" Throws:
+"     vim-libs-system-buffer-not-existing
+"         when the buffer doesn't exist
+"     vim-libs-system-buffer-not-displayed
+"         when the buffer is not displayed in a window
+"
+function! s:system.BufferSetAutocmds(buffer, group, autocmds) abort
+    for [l:event, l:Function] in items(a:autocmds)
+        call s:BufferExecute(a:buffer, [
+            \ 'augroup ' . a:group,
+            \ printf('autocmd %s <buffer> call %s()', l:event, l:Function),
+            \ 'augroup END',
+            \ ])
+    endfor
 endfunction
 
 " Create window split.
