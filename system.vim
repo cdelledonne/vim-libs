@@ -12,12 +12,6 @@ let s:stdout_partial_line = {}
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 function! s:BufferExecute(buffer, commands) abort
-    if !bufexists(a:buffer)
-        throw 'vim-libs-system-buffer-not-existing'
-    endif
-    if bufwinid(a:buffer) == -1
-        throw 'vim-libs-system-buffer-not-displayed'
-    endif
     let l:buffer = a:buffer != 0 ? a:buffer : bufnr()
     let l:target_win_id = bufwinid(l:buffer)
     for l:command in a:commands
@@ -45,10 +39,6 @@ endfunction
 
 function! s:system.BufferGetWindowID(buffer) abort
     return bufwinid(a:buffer)
-endfunction
-
-function! s:system.BufferWriteLines(buffer, lnum, lines) abort
-    call appendbufline(a:buffer, a:lnum, a:lines)
 endfunction
 
 function! s:system.DirectoryExists(path) abort
@@ -167,6 +157,36 @@ function! s:system.GetDataDir() abort
     return l:self.Path([l:editor_data_dir, g:libs_plugin_prefix], v:false)
 endfunction
 
+" Append lines of text to a buffer. This only works for a buffer which is
+" displayed in a window, otherwise throws an exception.
+"
+" Params:
+"     buffer : Number
+"         ID of the buffer
+"     lines : List
+"         list of strings to append to buffer
+"
+" Throws:
+"     vim-libs-system-buffer-not-existing
+"         when the buffer doesn't exist
+"     vim-libs-system-buffer-not-displayed
+"         when the buffer is not displayed in a window
+"
+function! s:system.BufferAppendLines(buffer, lines) abort
+    if !bufexists(a:buffer)
+        throw 'vim-libs-system-buffer-not-existing'
+    endif
+    if bufwinid(a:buffer) == -1
+        throw 'vim-libs-system-buffer-not-displayed'
+    endif
+    let l:win_id = bufwinid(a:buffer)
+    if line('$', l:win_id) == 1 && col('$', l:win_id) == 1
+        call setbufline(a:buffer, '$', a:lines)
+    else
+        call appendbufline(a:buffer, '$', a:lines)
+    endif
+endfunction
+
 " Create new buffer in a certain window.
 "
 " Params:
@@ -243,6 +263,12 @@ function! s:system.BufferSetKeymaps(buffer, mode, keymaps) abort
             let l:opts = {'noremap': v:true, 'silent': v:true}
             call nvim_buf_set_keymap(a:buffer, a:mode, l:lhs, l:rhs, l:opts)
         else
+            if !bufexists(a:buffer)
+                throw 'vim-libs-system-buffer-not-existing'
+            endif
+            if bufwinid(a:buffer) == -1
+                throw 'vim-libs-system-buffer-not-displayed'
+            endif
             call s:BufferExecute(a:buffer, [
                 \ printf('nnoremap <buffer> <silent> %s %s', l:lhs, l:rhs)
                 \ ])
@@ -269,6 +295,12 @@ endfunction
 "         when the buffer is not displayed in a window
 "
 function! s:system.BufferSetAutocmds(buffer, group, autocmds) abort
+    if !bufexists(a:buffer)
+        throw 'vim-libs-system-buffer-not-existing'
+    endif
+    if bufwinid(a:buffer) == -1
+        throw 'vim-libs-system-buffer-not-displayed'
+    endif
     for [l:event, l:Function] in items(a:autocmds)
         call s:BufferExecute(a:buffer, [
             \ 'augroup ' . a:group,
