@@ -190,33 +190,27 @@ endfunction
 " Create new buffer in a certain window.
 "
 " Params:
-"     window : Number
-"         ID of the window to create a buffer inside of
 "     echo_term : Bool
 "         whether the new buffer must be an echo terminal (job-less terminal to
 "         echo data to)
+"     a:1 : String
+"         optional buffer name
 "
 " Returns:
 "     Dictionary
 "         buffer_id : Number
 "             ID of the new buffer
 "         term_id : Number
-"             ID of the new echo terminal, if applicable
+"             ID of the new echo terminal, if applicable, otherwise -1
 "
-function! s:system.BufferCreate(window, echo_term) abort
-    let l:original_win_id = win_getid()
-    if l:original_win_id != a:window
-        noautocmd call win_gotoid(a:window)
-    endif
-    execute 'enew'
+function! s:system.BufferCreate(echo_term) abort
+    let l:buffer_name = exists('a:1') ? a:1 : ''
+    let l:buffer_id = bufadd(l:buffer_name)
+    call bufload(l:buffer_id)
     if a:echo_term
         let l:term_id = l:self.EchoTermOpen()
     else
         let l:term_id = -1
-    endif
-    let l:buffer_id = bufnr()
-    if l:original_win_id != a:window
-        noautocmd call win_gotoid(l:original_win_id)
     endif
     return {'buffer_id': l:buffer_id, 'term_id': l:term_id}
 endfunction
