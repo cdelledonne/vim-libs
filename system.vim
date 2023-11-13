@@ -332,6 +332,26 @@ function! s:system.WindowSetBuffer(window, buffer) abort
     return v:true
 endfunction
 
+" Set option values for a window.
+"
+" Params:
+"     window : Number
+"         window ID, or 0 for current window
+"     options : Dictionary
+"         dictionary of {name, value} pairs
+"
+function! s:system.WindowSetOptions(window, options) abort
+    for [l:name, l:value] in items(a:options)
+        if has('nvim')
+            call nvim_win_set_option(a:window, l:name, l:value)
+        else
+            let l:window = a:window != 0 ? a:window : win_getid()
+            let l:command = 'setlocal ' . s:OptPairToString(l:name, l:value)
+            call win_execute(l:window, l:command)
+        endif
+    endfor
+endfunction
+
 " Get system 'object'.
 "
 function! libs#system#Get() abort
