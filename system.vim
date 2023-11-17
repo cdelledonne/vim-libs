@@ -36,6 +36,10 @@ endfunction
 " Tiny wrappers for built-in functions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+function! s:system.AutocmdRun(autocmd) abort
+    execute 'doautocmd <nomodeline> User ' . a:autocmd
+endfunction
+
 function! s:system.BufferClear(buffer) abort
     silent call deletebufline(a:buffer, 1, '$')
 endfunction
