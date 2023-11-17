@@ -37,7 +37,7 @@ endfunction
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 function! s:system.BufferClear(buffer) abort
-    call deletebufline(a:buffer, 1, '$')
+    silent call deletebufline(a:buffer, 1, '$')
 endfunction
 
 function! s:system.BufferExists(buffer) abort
