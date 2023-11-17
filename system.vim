@@ -84,11 +84,11 @@ endfunction
 " Main functions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-" Generate escaped path string from list of components.
+" Generate escaped path string from list of segments.
 "
 " Params:
-"     components : List
-"         list of path components (strings)
+"     segments : String or List
+"         path segment, or list of path segments
 "     relative : Boolean
 "         whether to have the path relative to the current directory or absolute
 "
@@ -96,11 +96,11 @@ endfunction
 "     String
 "         escaped path string with appropriate path separators
 "
-function! s:system.Path(components, relative) abort
-    let components = a:components
+function! s:system.Path(segments, relative) abort
+    let segments = type(a:segments) == v:t_list ? a:segments : [a:segments]
     let separator = has('win32') ? '\' : '/'
-    " Join path components and get absolute path.
-    let path = join(components, separator)
+    " Join path segments and get absolute path.
+    let path = join(segments, separator)
     let path = simplify(path)
     let path = fnamemodify(path, ':p')
     " If path ends with separator, remove separator from path.
@@ -135,7 +135,7 @@ endfunction
 "
 function! s:system.Glob(expr) abort
     let files = glob(a:expr, v:false, v:true)
-    call map(files, {_, val -> self.Path([val], v:false)})
+    call map(files, {_, val -> self.Path(val, v:false)})
     return files
 endfunction
 
@@ -188,7 +188,7 @@ function! s:system.GetFunctionInfo(funcref) abort
     endtry
     " Extract file name and line number of where function was defined.
     let m = matchlist(info, '\m\CLast set from \(.*\) line \(\d\+\)')
-    return [self.Path([m[1]], v:true), str2nr(m[2])]
+    return [self.Path(m[1], v:true), str2nr(m[2])]
 endfunction
 
 " Append lines of text to a buffer. This only works for a buffer which is
