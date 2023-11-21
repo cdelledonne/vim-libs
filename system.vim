@@ -176,26 +176,27 @@ function! s:system.GetDataDir(plugname) abort
     return self.Path([editor_data_dir, a:plugname], v:false)
 endfunction
 
-" Get file and line number of function definition.
+" Get file and start and end line number of function definition.
 "
 " Params:
 "     funcref : Funcref
 "         function to extract information of
 "
 " Returns:
-"     List of [String, Number]
-"         file and line number, or [v:null, v:null] if function is not defined
+"     List of [String, Number, Number]
+"         file, start line number and end line number, or [v:null, v:null,
+"         v:null] if function is not defined
 "
 function! s:system.GetFunctionInfo(funcref) abort
     try
         " Get function info.
-        let info = split(execute('verbose function a:funcref'), "\n")[1]
+        let info = split(execute('verbose function a:funcref'), "\n")
     catch /E123/
-        return [v:null, v:null]
+        return [v:null, v:null, v:null]
     endtry
     " Extract file name and line number of where function was defined.
-    let m = matchlist(info, '\m\CLast set from \(.*\) line \(\d\+\)')
-    return [self.Path(m[1], v:true), str2nr(m[2])]
+    let m = matchlist(info[1], '\m\CLast set from \(.*\) line \(\d\+\)')
+    return [self.Path(m[1], v:false), str2nr(m[2]), str2nr(m[2]) + len(info) - 2]
 endfunction
 
 " Append lines of text to a buffer. This only works for a buffer which is
