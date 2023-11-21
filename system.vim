@@ -5,6 +5,7 @@
 
 let s:system = {}
 
+let s:separator = has('win32') ? '\' : '/'
 let s:stdout_partial_line = {}
 
 let s:logger = libs#logger#Get('vim-libs', '[vim-libs ] ')
@@ -102,13 +103,12 @@ endfunction
 "
 function! s:system.Path(segments, relative) abort
     let segments = type(a:segments) == v:t_list ? a:segments : [a:segments]
-    let separator = has('win32') ? '\' : '/'
     " Join path segments and get absolute path.
-    let path = join(segments, separator)
+    let path = join(segments, s:separator)
     let path = simplify(path)
     let path = fnamemodify(path, ':p')
     " If path ends with separator, remove separator from path.
-    if match(path, '\m\C\' . separator . '$') != -1
+    if match(path, '\m\C\' . s:separator . '$') != -1
         let path = fnamemodify(path, ':h')
     endif
     " Reduce to relative path if requested.
@@ -132,14 +132,17 @@ endfunction
 " Params:
 "     expr : String
 "         expression to expand
+"     relative : Boolean
+"         whether to have the path relative to the current directory or absolute
 "
 " Returns:
 "     List
 "         matching files
 "
-function! s:system.Glob(expr) abort
+function! s:system.Glob(expr, relative) abort
     let files = glob(a:expr, v:false, v:true)
-    call map(files, {_, val -> self.Path(val, v:false)})
+    call map(files, {_, val -> self.Path(val, a:relative)})
+    call map(files, {_, val -> isdirectory(val) ? val . s:separator : val})
     return files
 endfunction
 
