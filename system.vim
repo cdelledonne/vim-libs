@@ -211,8 +211,13 @@ function! s:system.GetFunctionInfo(funcref) abort
         return [v:null, v:null, v:null]
     endtry
     " Extract file name and line number of where function was defined.
-    let m = matchlist(info[1], '\m\CLast set from \(.*\) line \(\d\+\)')
-    return [self.Path(m[1], v:false), str2nr(m[2]), str2nr(m[2]) + len(info) - 2]
+    let file_and_start_line_string = matchlist(
+        \ info[1], '\m\CLast set from \(.*\) line \(\d\+\)')
+    let file = self.Path(file_and_start_line_string[1], v:false)
+    let start_line = str2nr(file_and_start_line_string[2])
+    let last_line_string = matchlist(info[-2], '\m\C^\s*\(\d\+\)\s*.*')[1]
+    let end_line = start_line + str2nr(last_line_string) + 1
+    return [file, start_line, end_line]
 endfunction
 
 " Append lines of text to a buffer. This only works for a buffer which is
