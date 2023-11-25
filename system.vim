@@ -37,8 +37,24 @@ endfunction
 " Tiny wrappers for built-in functions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+function! s:system.AutocmdDelete(event, pat, group) abort
+    call execute([
+        \ 'augroup ' . a:group,
+        \ printf('autocmd! %s %s', a:event, a:pat),
+        \ 'augroup END',
+        \ ])
+endfunction
+
 function! s:system.AutocmdRun(autocmd) abort
     execute 'doautocmd <nomodeline> User ' . a:autocmd
+endfunction
+
+function! s:system.AutocmdSet(event, pat, cmd, group) abort
+    call execute([
+        \ 'augroup ' . a:group,
+        \ printf('autocmd %s %s %s', a:event, a:pat, a:cmd),
+        \ 'augroup END',
+        \ ])
 endfunction
 
 function! s:system.BufferClear(buffer) abort
