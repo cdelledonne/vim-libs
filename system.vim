@@ -197,7 +197,7 @@ endfunction
 " Get file and start and end line number of function definition.
 "
 " Params:
-"     funcref : Funcref
+"     function : Funcref or String
 "         function to extract information of
 "
 " Returns:
@@ -205,10 +205,15 @@ endfunction
 "         file, start line number and end line number, or [v:null, v:null,
 "         v:null] if function is not defined
 "
-function! s:system.GetFunctionInfo(funcref) abort
+function! s:system.GetFunctionInfo(function) abort
     try
         " Get function info.
-        let info = split(execute('verbose function a:funcref'), "\n")
+        let info = split(
+            \ execute(printf(
+            \     'verbose function %s',
+            \     type(a:function) == v:t_func ? 'a:function' : a:function
+            \     )
+            \ ), "\n")
     catch /E123/
         return [v:null, v:null, v:null]
     endtry
