@@ -45,8 +45,10 @@ function! s:system.AutocmdDelete(event, pat, group) abort
         \ ])
 endfunction
 
-function! s:system.AutocmdRun(autocmd) abort
-    execute 'doautocmd <nomodeline> User ' . a:autocmd
+function! s:system.AutocmdRun(event) abort
+    if exists('#User#' . a:event)
+        execute 'doautocmd <nomodeline> User ' . a:event
+    endif
 endfunction
 
 function! s:system.AutocmdSet(event, pat, cmd, group) abort
