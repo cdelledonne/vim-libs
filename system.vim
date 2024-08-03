@@ -105,6 +105,15 @@ function! s:system.GetCWD() abort
     return getcwd()
 endfunction
 
+function! s:system.GetEnv(variable) abort
+    if exists('*getenv')
+        return getenv(a:variable)
+    else
+        let command = 'return exists("$%s") ? $%s : v:null'
+        call execute(printf(command, a:variable, a:variable))
+    endif
+endfunction
+
 function! s:system.GetStackTrace() abort
     return split(expand('<stack>'), '\m\C\.\.')
 endfunction
@@ -228,9 +237,9 @@ function! s:system.GetDataDir(plugname) abort
         " - on MS-Windows: $TEMP/nvim
         " - on Unix: $XDG_CACHE_HOME/nvim
         if has('win32')
-            let cache_dir = getenv('TEMP')
+            let cache_dir = self.GetEnv('TEMP')
         else
-            let cache_dir = getenv('XDG_CACHE_HOME')
+            let cache_dir = self.GetEnv('XDG_CACHE_HOME')
             if cache_dir == v:null
                 let cache_dir = self.Path([$HOME, '.cache'], v:false)
             endif
@@ -651,7 +660,7 @@ function! s:system.JobRun(command, wait, options) abort
             " Moreover, we need to pass the 'TERM' environment variable
             " explicitly, otherwise Vim sets it to 'dumb', which prevents some
             " programs from producing some ANSI sequences.
-            let job_options.env.TERM = getenv('TERM')
+            let job_options.env.TERM = self.GetEnv('TERM')
         endif
         " Start job.
         let job_id = job_start(command, job_options)
