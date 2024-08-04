@@ -21,7 +21,7 @@ let s:error = libs#error#Get('vim-libs', s:logger)
 " Private functions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-function! s:ProcessArgName(name) abort
+function! s:argparser._ProcessArgName(name) abort
     let arg = {}
     if type(a:name) is v:t_list
         if len(a:name) == 2
@@ -61,7 +61,7 @@ function! s:ProcessArgName(name) abort
     return arg
 endfunction
 
-function! s:CheckArgProperties(arg) abort
+function! s:argparser._CheckArgProperties(arg) abort
     if type(a:arg.nargs) != v:t_number
         if !s:system.ListHas(s:valid_nargs, a:arg.nargs)
             call s:error.Throw('UNKNOWN_ARG_NARGS', string(a:arg.nargs))
@@ -75,7 +75,7 @@ function! s:CheckArgProperties(arg) abort
     endif
 endfunction
 
-function! s:StoreArgValue(argdict, arg, value) abort
+function! s:argparser._StoreArgValue(argdict, arg, value) abort
     " Check that argument is not passed more times than allowed.
     if a:arg.allowed == 0
         let max = a:arg.nargs ==# '?' ? 1 : a:arg.nargs
@@ -133,7 +133,7 @@ endfunction
 "
 function! s:argparser.AddArgument(name, nargs, ...) abort
     " Process name.
-    let arg = s:ProcessArgName(a:name)
+    let arg = self._ProcessArgName(a:name)
     if arg == {}
         call s:error.Throw('WRONG_ARG_NAME', string(a:name))
     endif
@@ -148,7 +148,7 @@ function! s:argparser.AddArgument(name, nargs, ...) abort
     " Set additional argument properties.
     let arg.nargs = a:nargs
     let arg.action = exists('a:1') ? a:1 : 'store'
-    call s:CheckArgProperties(arg)
+    call self._CheckArgProperties(arg)
     " Set required and allowed usage of argument.
     if arg.nargs ==# '?'
         let arg.required = 0
@@ -212,7 +212,7 @@ function! s:argparser.Parse(arglist) abort
         " in the previous iteration of the for loop.
         if expect_value
             let expect_value = v:false
-            call s:StoreArgValue(argdict, latest_arg, passed_arg)
+            call self._StoreArgValue(argdict, latest_arg, passed_arg)
             continue
         endif
         " If we find an argument starting with a dash, it is a dashed argument.
@@ -231,7 +231,7 @@ function! s:argparser.Parse(arglist) abort
             " of the for loop.
             let latest_arg = self.args[found_arg_idx]
             if latest_arg.action ==# 'store_true'
-                call s:StoreArgValue(argdict, latest_arg, v:true)
+                call self._StoreArgValue(argdict, latest_arg, v:true)
             else
                 let expect_value = v:true
             endif
@@ -250,7 +250,7 @@ function! s:argparser.Parse(arglist) abort
                     \ 'positional ', string(passed_arg))
             endif
             let latest_arg = self.args[found_arg_idx]
-            call s:StoreArgValue(argdict, latest_arg, passed_arg)
+            call self._StoreArgValue(argdict, latest_arg, passed_arg)
         endif
     endfor
     " Check that we're not still expecting a value at the end of the parsing.

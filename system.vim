@@ -15,7 +15,7 @@ let s:error = libs#error#Get('vim-libs', s:logger)
 " Private functions
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-function! s:BufferExecute(buffer, commands) abort
+function! s:system._BufferExecute(buffer, commands) abort
     let buffer = a:buffer != 0 ? a:buffer : bufnr('%')
     let target_win_id = bufwinid(buffer)
     for command in a:commands
@@ -23,7 +23,7 @@ function! s:BufferExecute(buffer, commands) abort
     endfor
 endfunction
 
-function! s:OptPairToString(name, value) abort
+function! s:system._OptPairToString(name, value) abort
     if a:value is v:true
         return a:name
     elseif a:value is v:false
@@ -33,7 +33,7 @@ function! s:OptPairToString(name, value) abort
     endif
 endfunction
 
-function! s:ManipulateCommand(command) abort
+function! s:system._ManipulateCommand(command) abort
     let ret_command = []
     for arg in a:command
         " Remove double quotes around argument that are quoted. For instance,
@@ -449,7 +449,7 @@ function! s:system.BufferSetKeymaps(buffer, mode, keymaps) abort
             if bufwinid(a:buffer) == -1
                 call s:error.Throw('BUFFER_NOT_DISPLAYED', a:buffer)
             endif
-            call s:BufferExecute(a:buffer,
+            call self._BufferExecute(a:buffer,
                 \ [printf('nnoremap <buffer> <silent> %s %s', lhs, rhs)])
         endif
     endfor
@@ -481,7 +481,7 @@ function! s:system.BufferSetAutocmds(buffer, group, autocmds) abort
         call s:error.Throw('BUFFER_NOT_DISPLAYED', a:buffer)
     endif
     for [event, Function] in items(a:autocmds)
-        call s:BufferExecute(a:buffer, [
+        call self._BufferExecute(a:buffer, [
             \ 'augroup ' . a:group,
             \ printf('autocmd %s <buffer> call %s()', event, Function),
             \ 'augroup END',
@@ -582,7 +582,7 @@ function! s:system.WindowSetOptions(window, options) abort
             call nvim_win_set_option(a:window, name, value)
         else
             let window = a:window != 0 ? a:window : win_getid()
-            let command = 'setlocal ' . s:OptPairToString(name, value)
+            let command = 'setlocal ' . self._OptPairToString(name, value)
             call win_execute(window, command)
         endif
     endfor
@@ -621,7 +621,7 @@ endfunction
 "         job id
 "
 function! s:system.JobRun(command, wait, options) abort
-    let command = s:ManipulateCommand(a:command)
+    let command = self._ManipulateCommand(a:command)
     let job_options = {}
     let job_options.pty = get(a:options, 'pty', v:false)
     let job_options.env = get(a:options, 'env', {})
@@ -691,7 +691,7 @@ endfunction
 "         job id
 "
 function! s:system.TermRun(command, options, window) abort
-    let command = s:ManipulateCommand(a:command)
+    let command = self._ManipulateCommand(a:command)
     let window = a:window != 0 ? a:window : win_getid()
     let job_options = {}
     if has('nvim')
