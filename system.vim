@@ -16,7 +16,7 @@ let s:error = libs#error#Get('vim-libs', s:logger)
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 function! s:BufferExecute(buffer, commands) abort
-    let buffer = a:buffer != 0 ? a:buffer : bufnr()
+    let buffer = a:buffer != 0 ? a:buffer : bufnr('%')
     let target_win_id = bufwinid(buffer)
     for command in a:commands
         call win_execute(target_win_id, command)
@@ -335,9 +335,9 @@ function! s:system.BufferCreate(echo_term, ...) abort
         " properly format ANSI sequences and in general a job's output.
         let options = {}
         if has('nvim')
-            let term_id = nvim_open_term(bufnr(), options)
+            let term_id = nvim_open_term(bufnr('%'), options)
             if exists('a:1')
-                call nvim_buf_set_name(bufnr(), a:1)
+                call nvim_buf_set_name(bufnr('%'), a:1)
             endif
         else
             let options.curwin = v:true
@@ -351,7 +351,7 @@ function! s:system.BufferCreate(echo_term, ...) abort
     else
         let term_id = -1
     endif
-    let buffer_id = bufnr()
+    let buffer_id = bufnr('%')
     return {'buffer_id': buffer_id, 'term_id': term_id}
 endfunction
 
