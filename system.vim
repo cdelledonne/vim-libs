@@ -19,7 +19,7 @@ function! s:system._BufferExecute(buffer, commands) abort
     let buffer = a:buffer != 0 ? a:buffer : bufnr('%')
     let target_win_id = bufwinid(buffer)
     for command in a:commands
-        call win_execute(target_win_id, command)
+        call self.WindowExecute(target_win_id, command)
     endfor
 endfunction
 
@@ -143,7 +143,12 @@ function! s:system.VimIsStarting() abort
 endfunction
 
 function! s:system.WindowClose(window) abort
-    call win_execute(a:window, 'quit')
+    call self.WindowExecute(a:window, 'quit')
+endfunction
+
+function! s:system.WindowExecute(window, command) abort
+    let Function = function('execute', [a:command])
+    return self.WindowRun(a:window, Function)
 endfunction
 
 function! s:system.WindowGetID() abort
@@ -583,7 +588,7 @@ function! s:system.WindowSetOptions(window, options) abort
         else
             let window = a:window != 0 ? a:window : win_getid()
             let command = 'setlocal ' . self._OptPairToString(name, value)
-            call win_execute(window, command)
+            call self.WindowExecute(window, command)
         endif
     endfor
 endfunction
